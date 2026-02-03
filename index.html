@@ -4,18 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin Dashboard Pro</title>
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
     <style>
+        /* UI Style form the Second App */
         body { font-family: 'Segoe UI', sans-serif; background: #0b0b0b; color: white; margin: 0; height: 100vh; overflow: hidden; }
         #toastBox { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e676; color: #000; padding: 12px 25px; border-radius: 30px; font-weight: bold; display: none; z-index: 9999; }
         #dashboard { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; gap: 20px; }
-        .dash-card { width: 85%; max-width: 320px; padding: 35px 20px; background: #1a1a1a; border-radius: 20px; text-align: center; cursor: pointer; border: 1px solid #333; }
+        .dash-card { width: 85%; max-width: 320px; padding: 35px 20px; background: #1a1a1a; border-radius: 20px; text-align: center; cursor: pointer; border: 1px solid #333; transition: 0.2s; }
+        .dash-card:active { transform: scale(0.98); background: #222; }
         .page { display: none; flex-direction: column; height: 100vh; background: #0b0b0b; }
         .header { background: #111; padding: 15px; display: flex; align-items: center; border-bottom: 1px solid #333; }
         .back-btn { background: #333; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; margin-right: 15px; }
         .content-area { padding: 20px; overflow-y: auto; flex-grow: 1; }
-        textarea { width: 100%; height: 120px; background: #111; color: white; border: 1px solid #444; padding: 12px; font-size: 16px; margin-bottom: 15px; outline: none; box-sizing: border-box; }
+        textarea { width: 100%; height: 120px; background: #111; color: white; border: 1px solid #444; padding: 12px; font-size: 16px; margin-bottom: 15px; outline: none; box-sizing: border-box; border-radius: 10px; }
         .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
         .btn { padding: 14px; border: none; font-weight: bold; cursor: pointer; flex: 1; text-align: center; font-size: 13px; border-radius: 10px; }
         .btn-blue { background: #2196F3; color: white; }
@@ -24,85 +28,229 @@
         #mainVideo { width: 95%; max-width: 450px; height: 230px; border-radius: 15px; background: #000; border: 2px solid #333; display: block; margin: 10px auto; }
         .list-section { flex-grow: 1; overflow-y: auto; padding: 10px; }
         .clip-card { background: #181818; margin-bottom: 10px; padding: 12px; border-radius: 12px; display: flex; align-items: center; border: 1px solid #222; }
-        .save-btn { background: #00e676; color: black; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .save-btn { background: #00e676; color: black; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-left: 10px; }
+        input[type="file"] { display: none; }
+        .file-label { display: block; padding: 15px; background: #333; text-align: center; border-radius: 10px; margin: 15px 0; border: 1px dashed #666; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="toastBox">Action Successful!</div>
+
+    <!-- MAIN DASHBOARD -->
     <div id="dashboard">
-        <h1 style="color: #00e676;">Admin Panel</h1>
-        <div class="dash-card" onclick="showPage('videoPage')"><h2>🎥 Video History</h2></div>
-        <div class="dash-card" onclick="showPage('controlPage')"><h2>🖥️ Remote Control</h2></div>
+        <h1 style="color: #00e676; letter-spacing: 1px;">ADMIN PANEL</h1>
+        <div class="dash-card" onclick="showPage('videoPage')">
+            <h2 style="margin:0">🎥 Recordings</h2>
+            <p style="color:#777; margin:5px 0 0 0;">View user recordings</p>
+        </div>
+        <div class="dash-card" onclick="showPage('controlPage')">
+            <h2 style="margin:0">📤 Send Data</h2>
+            <p style="color:#777; margin:5px 0 0 0;">Send Text or Video to User</p>
+        </div>
     </div>
 
+    <!-- VIDEO HISTORY PAGE -->
     <div id="videoPage" class="page">
-        <div class="header"><button class="back-btn" onclick="showDashboard()">← Back</button><h3>Videos</h3></div>
-        <video id="mainVideo" controls autoplay muted playsinline></video>
-        <div style="padding:10px; text-align:center;"><button class="btn-red" onclick="doDelete()">Delete Selected</button></div>
-        <div class="list-section" id="videoList"></div>
+        <div class="header">
+            <button class="back-btn" onclick="showDashboard()">← Back</button>
+            <h3>Recordings List</h3>
+        </div>
+        <video id="mainVideo" controls playsinline></video>
+        
+        <div style="padding:10px; text-align:center;">
+            <button class="btn-red" style="width: 80%;" onclick="doDelete()">Delete Selected Items</button>
+        </div>
+        <div class="list-section" id="videoList">
+            <!-- List will load here -->
+        </div>
     </div>
 
+    <!-- CONTROL PAGE (Send Text/Video) -->
     <div id="controlPage" class="page">
-        <div class="header"><button class="back-btn" onclick="showDashboard()">← Back</button><h3>Control</h3></div>
+        <div class="header">
+            <button class="back-btn" onclick="showDashboard()">← Back</button>
+            <h3>Send to User</h3>
+        </div>
         <div class="content-area">
-            <textarea id="remoteMsg" placeholder="Message..."></textarea>
+            <label style="color:#aaa; font-size:12px; margin-left:5px;">SEND TEXT MESSAGE</label>
+            <textarea id="textMsg" placeholder="Type message here..."></textarea>
             <div class="btn-group">
-                <button class="btn btn-blue" onclick="sendText()">Update Text</button>
-                <button class="btn btn-red" onclick="clearText()">Clear Text</button>
+                <button class="btn btn-blue" onclick="sendText()">Send Text</button>
+                <button class="btn btn-red" onclick="clearText()">Clear Input</button>
             </div>
-            <input type="file" id="picInput" accept="image/*" style="margin: 15px 0; color: #555;">
+
+            <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+
+            <label style="color:#aaa; font-size:12px; margin-left:5px;">SEND VIDEO FILE</label>
+            <!-- Hidden Input Triggered by Label -->
+            <label for="videoInput" class="file-label" id="fileLabel">Tap to Select Video</label>
+            <input type="file" id="videoInput" accept="video/*" onchange="updateLabel(this)">
+            
             <div class="btn-group">
-                <button class="btn btn-orange" onclick="uploadPic()">Upload (Original Quality)</button>
-                <button class="btn btn-red" onclick="clearImage()">Delete Pic</button>
+                <button class="btn btn-orange" onclick="sendVideo()">Upload & Send Video</button>
             </div>
-            <button class="btn btn-red" style="width:100%; background:#444;" onclick="clearAll()">FAST CLEAR ALL</button>
         </div>
     </div>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyBqeyPDHeWvvKsDXOp13JkVYMaWaPM9dko", authDomain: "camera-92fee.firebaseapp.com", projectId: "camera-92fee", storageBucket: "camera-92fee.firebasestorage.app", messagingSenderId: "530687776530", appId: "1:530687776530:web:95c00e598e07d33dbac5cb" };
+        /* ===== FIREBASE CONFIGURATION ===== */
+        const firebaseConfig = {
+            apiKey: "AIzaSyDRStBDXM2OqFbyKuT26pKgvZwiWjSERLU",
+            authDomain: "camera-2d884.firebaseapp.com",
+            projectId: "camera-2d884",
+            storageBucket: "camera-2d884.firebasestorage.app",
+            messagingSenderId: "71602055036",
+            appId: "1:71602055036:web:65cbbf91ad91dd2df6e6f9"
+        };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         let selectedIds = [];
 
-        function showPage(id) { document.getElementById('dashboard').style.display='none'; document.getElementById(id).style.display='flex'; }
-        function showDashboard() { document.querySelectorAll('.page').forEach(p=>p.style.display='none'); document.getElementById('dashboard').style.display='flex'; }
-        function showToast(msg) { const t=document.getElementById('toastBox'); t.innerText=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
-
-        function sendText() { db.collection("control").doc("currentStatus").set({ type: 'text', content: document.getElementById('remoteMsg').value }, {merge: true}).then(()=>showToast("Text Updated!")); }
-        function clearText() { db.collection("control").doc("currentStatus").update({ content: "" }).then(()=>showToast("Text Deleted!")); }
-        
-        function uploadPic() {
-            const file = document.getElementById('picInput').files[0];
-            if(!file) return showToast("Select Image!");
-            showToast("Uploading Full Quality...");
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => {
-                db.collection("control").doc("currentStatus").set({
-                    type: 'image',
-                    content: reader.result,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(()=>showToast("Pic Live Now!"));
-            };
+        /* ===== UI NAVIGATION FUNCTIONS ===== */
+        function showPage(id) { 
+            document.getElementById('dashboard').style.display = 'none'; 
+            document.getElementById(id).style.display = 'flex'; 
         }
-        
-        function clearImage() { db.collection("control").doc("currentStatus").update({ type: 'text' }).then(()=>showToast("Image Deleted!")); }
-        function clearAll() { db.collection("control").doc("currentStatus").set({ type: 'clear', content: '' }).then(()=>showToast("Cleared!")); }
+        function showDashboard() { 
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none'); 
+            document.getElementById('dashboard').style.display = 'flex'; 
+            // Pause video when leaving page
+            document.getElementById('mainVideo').pause();
+        }
+        function showToast(msg) { 
+            const t = document.getElementById('toastBox'); 
+            t.innerText = msg; 
+            t.style.display = 'block'; 
+            setTimeout(() => t.style.display = 'none', 2500); 
+        }
+        function updateLabel(input) {
+            document.getElementById('fileLabel').innerText = input.files[0] ? "Selected: " + input.files[0].name : "Tap to Select Video";
+            document.getElementById('fileLabel').style.borderColor = "#00e676";
+            document.getElementById('fileLabel').style.color = "#00e676";
+        }
 
-        db.collection("recordings").orderBy("timestamp", "desc").limit(30).onSnapshot(snap => {
-            const list = document.getElementById('videoList'); list.innerHTML = "";
+        /* ===== LOGIC: SEND DATA TO USER (admin_to_user) ===== */
+        
+        // 1. Send Text
+        function sendText() {
+            const txt = document.getElementById('textMsg').value;
+            if(!txt) return showToast("Please type something!");
+
+            db.collection("admin_to_user").doc("current").set({
+                type: "text",
+                data: txt,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                showToast("Text Sent Successfully!");
+            }).catch(e => showToast("Error: " + e.message));
+        }
+
+        function clearText() {
+            document.getElementById('textMsg').value = "";
+        }
+
+        // 2. Send Video
+        function sendVideo() {
+            const inp = document.getElementById('videoInput');
+            const file = inp.files[0];
+            
+            if(!file) return showToast("Select a video first!");
+            
+            showToast("Uploading Video... Please Wait.");
+            
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                db.collection("admin_to_user").doc("current").set({
+                    type: "video",
+                    data: reader.result,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    showToast("Video Sent to User!");
+                    // Reset input
+                    inp.value = "";
+                    document.getElementById('fileLabel').innerText = "Tap to Select Video";
+                    document.getElementById('fileLabel').style.color = "white";
+                    document.getElementById('fileLabel').style.borderColor = "#666";
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+
+        /* ===== LOGIC: VIEW RECORDINGS (recordings) ===== */
+        
+        // Listen to "recordings" collection (matches old app logic)
+        db.collection("recordings").orderBy("createdAt", "desc").limit(50).onSnapshot(snap => {
+            const list = document.getElementById('videoList'); 
+            list.innerHTML = "";
+            
+            if(snap.empty) {
+                list.innerHTML = "<p style='text-align:center; color:#555;'>No recordings found</p>";
+                return;
+            }
+
             snap.forEach(doc => {
-                const d = doc.data(); const ts = d.timestamp ? d.timestamp.toDate().toLocaleTimeString() : "New";
-                const card = document.createElement('div'); card.className = 'clip-card';
-                card.innerHTML = `<input type="checkbox" onchange="toggleClip('${doc.id}')"><div style="flex:1" onclick="play('${d.videoData}')">🕒 ${ts}</div><button class="save-btn" onclick="save('${d.videoData}')">Save</button>`;
+                const d = doc.data(); 
+                // Format timestamp
+                let ts = "Unknown Time";
+                if(d.createdAt && d.createdAt.toDate) {
+                    ts = d.createdAt.toDate().toLocaleString();
+                }
+
+                const card = document.createElement('div'); 
+                card.className = 'clip-card';
+                // Using d.videoText because old app used that key for video data
+                card.innerHTML = `
+                    <input type="checkbox" style="transform:scale(1.3); margin-right:10px;" onchange="toggleClip('${doc.id}')">
+                    <div style="flex:1; overflow:hidden;" onclick="play('${d.videoText}')">
+                        <div style="font-weight:bold; font-size:14px; color:#fff;">📹 Video Clip</div>
+                        <div style="font-size:11px; color:#888;">${ts}</div>
+                    </div>
+                    <button class="save-btn" style="background:#333; color:white;" onclick="play('${d.videoText}')">▶</button>
+                    <button class="save-btn" onclick="save('${d.videoText}')">⬇</button>
+                `;
                 list.appendChild(card);
             });
         });
-        function play(url) { document.getElementById('mainVideo').src=url; document.getElementById('mainVideo').play(); }
-        function save(url) { const a=document.createElement('a'); a.href=url; a.download="vid.webm"; a.click(); }
-        function toggleClip(id) { if(selectedIds.includes(id)) selectedIds=selectedIds.filter(i=>i!==id); else selectedIds.push(id); }
-        async function doDelete() { const batch=db.batch(); selectedIds.forEach(id=>batch.delete(db.collection("recordings").doc(id))); await batch.commit(); selectedIds=[]; showToast("Deleted!"); }
+
+        function play(url) { 
+            const v = document.getElementById('mainVideo');
+            v.src = url; 
+            v.play(); 
+            // Scroll to top to see video
+            document.querySelector('.content-area') ? document.querySelector('.content-area').scrollTop = 0 : null;
+        }
+
+        function save(url) { 
+            const a = document.createElement('a'); 
+            a.href = url; 
+            a.download = "recording_" + Date.now() + ".webm"; 
+            a.click(); 
+        }
+
+        function toggleClip(id) { 
+            if(selectedIds.includes(id)) {
+                selectedIds = selectedIds.filter(i => i !== id); 
+            } else {
+                selectedIds.push(id); 
+            }
+        }
+
+        async function doDelete() { 
+            if(selectedIds.length === 0) return showToast("Select items to delete!");
+            
+            if(!confirm("Are you sure you want to delete " + selectedIds.length + " items?")) return;
+
+            const batch = db.batch(); 
+            selectedIds.forEach(id => {
+                batch.delete(db.collection("recordings").doc(id));
+            });
+            
+            await batch.commit(); 
+            selectedIds = []; 
+            showToast("Deleted Successfully!"); 
+        }
     </script>
 </body>
 </html>
