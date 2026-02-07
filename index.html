@@ -3,254 +3,416 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Admin Dashboard Pro</title>
-    <!-- Firebase SDK -->
+    <title>Photo & Video live</title>
+    <!-- SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    
+
     <style>
-        /* UI Style form the Second App */
-        body { font-family: 'Segoe UI', sans-serif; background: #0b0b0b; color: white; margin: 0; height: 100vh; overflow: hidden; }
-        #toastBox { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e676; color: #000; padding: 12px 25px; border-radius: 30px; font-weight: bold; display: none; z-index: 9999; }
-        #dashboard { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; gap: 20px; }
-        .dash-card { width: 85%; max-width: 320px; padding: 35px 20px; background: #1a1a1a; border-radius: 20px; text-align: center; cursor: pointer; border: 1px solid #333; transition: 0.2s; }
-        .dash-card:active { transform: scale(0.98); background: #222; }
-        .page { display: none; flex-direction: column; height: 100vh; background: #0b0b0b; }
-        .header { background: #111; padding: 15px; display: flex; align-items: center; border-bottom: 1px solid #333; }
-        .back-btn { background: #333; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; margin-right: 15px; }
-        .content-area { padding: 20px; overflow-y: auto; flex-grow: 1; }
-        textarea { width: 100%; height: 120px; background: #111; color: white; border: 1px solid #444; padding: 12px; font-size: 16px; margin-bottom: 15px; outline: none; box-sizing: border-box; border-radius: 10px; }
-        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn { padding: 14px; border: none; font-weight: bold; cursor: pointer; flex: 1; text-align: center; font-size: 13px; border-radius: 10px; }
-        .btn-blue { background: #2196F3; color: white; }
-        .btn-orange { background: #ff9800; color: white; }
-        .btn-red { background: #f44336; color: white; }
-        #mainVideo { width: 95%; max-width: 450px; height: 230px; border-radius: 15px; background: #000; border: 2px solid #333; display: block; margin: 10px auto; }
-        .list-section { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        .clip-card { background: #181818; margin-bottom: 10px; padding: 12px; border-radius: 12px; display: flex; align-items: center; border: 1px solid #222; }
-        .save-btn { background: #00e676; color: black; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-left: 10px; }
-        input[type="file"] { display: none; }
-        .file-label { display: block; padding: 15px; background: #333; text-align: center; border-radius: 10px; margin: 15px 0; border: 1px dashed #666; cursor: pointer; }
+        /* BASE STYLES */
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f10; color: #e0e0e0; margin: 0; height: 100vh; overflow: hidden; user-select: none; }
+        .hidden { display: none !important; }
+        .flex-center { display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; }
+        
+        /* AUTH & CARDS */
+        .card-box { background: #1a1a1e; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; border: 1px solid #333; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 8px 0; background: #25252b; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; outline: none; }
+        .btn { width: 100%; padding: 12px; background: #00e676; color: #000; border: none; font-weight: bold; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+        .btn-blue { background: #2979ff; color: white; }
+        .btn-red { background: #ff3d00; }
+        
+        /* DASHBOARD */
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
+        .dash-item { background: #1a1a1e; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #333; cursor: pointer; }
+        
+        /* LINK BAR */
+        .link-bar { background: #222; padding: 10px; margin: 10px; border-radius: 8px; border: 1px dashed #00e676; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .link-text { flex: 1; font-size: 11px; color: #00e676; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .copy-btn { background: #333; color: white; border: 1px solid #555; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; }
+
+        /* LIST ITEMS */
+        .page-header { background: #1a1a1e; padding: 15px; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
+        .content-area { height: calc(100vh - 140px); overflow-y: auto; padding: 10px; }
+        .list-item { display: flex; align-items: center; background: #1e1e24; margin-bottom: 10px; padding: 8px; border-radius: 8px; border: 1px solid #333; position: relative; }
+        
+        /* Selection UI */
+        .chk-box { display: none; transform: scale(1.5); margin-right: 15px; margin-left: 5px; }
+        .selection-mode .chk-box { display: block; }
+        .selection-mode .list-item.selected { background: #333; border-color: #00e676; }
+        
+        .thumb-box { width: 70px; height: 50px; background: #000; margin-right: 12px; border-radius: 5px; overflow: hidden; position: relative; flex-shrink: 0; }
+        .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .item-info { flex: 1; overflow: hidden; }
+        .item-date { font-size: 10px; color: #888; margin-top: 3px; }
+        .btn-sm { padding: 6px 12px; border-radius: 5px; font-size: 12px; border: none; cursor: pointer; color: white; }
+        .btn-back { background: #333; }
+
+        /* VIDEO MODAL */
+        #video-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #modal-video-player { width: 100%; max-height: 80vh; }
+        .close-modal-btn { position: absolute; top: 20px; right: 20px; background: rgba(255, 0, 0, 0.8); color: white; padding: 10px 20px; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; z-index: 1001; }
+
+        /* === CUSTOM POPUP UI (ALERT/CONFIRM) === */
+        #custom-popup {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .popup-box {
+            background: #1e1e24; width: 80%; max-width: 300px; padding: 25px;
+            border-radius: 15px; text-align: center; border: 1px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .popup-title { font-size: 18px; font-weight: bold; color: white; margin-bottom: 10px; }
+        .popup-msg { font-size: 14px; color: #ccc; margin-bottom: 20px; line-height: 1.4; }
+        .popup-actions { display: flex; gap: 10px; justify-content: center; }
+        .popup-btn { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-ok { background: #00e676; color: black; }
+        .btn-cancel { background: #333; color: white; }
     </style>
 </head>
 <body>
-    <div id="toastBox">Action Successful!</div>
 
-    <!-- MAIN DASHBOARD -->
-    <div id="dashboard">
-        <h1 style="color: #00e676; letter-spacing: 1px;">ADMIN PANEL</h1>
-        <div class="dash-card" onclick="showPage('videoPage')">
-            <h2 style="margin:0">🎥 Recordings</h2>
-            <p style="color:#777; margin:5px 0 0 0;">View user recordings</p>
-        </div>
-        <div class="dash-card" onclick="showPage('controlPage')">
-            <h2 style="margin:0">📤 Send Data</h2>
-            <p style="color:#777; margin:5px 0 0 0;">Send Text or Video to User</p>
+    <!-- CUSTOM POPUP OVERLAY -->
+    <div id="custom-popup" class="hidden">
+        <div class="popup-box">
+            <div id="popup-title" class="popup-title">Alert</div>
+            <div id="popup-msg" class="popup-msg">Message goes here...</div>
+            <div id="popup-actions" class="popup-actions">
+                <!-- Buttons will be injected here -->
+            </div>
         </div>
     </div>
 
-    <!-- VIDEO HISTORY PAGE -->
-    <div id="videoPage" class="page">
-        <div class="header">
-            <button class="back-btn" onclick="showDashboard()">← Back</button>
-            <h3>Recordings List</h3>
+    <!-- VIDEO PLAYER OVERLAY -->
+    <div id="video-modal" class="hidden">
+        <button class="close-modal-btn" onclick="closePlayer()">✖ CLOSE</button>
+        <video id="modal-video-player" controls playsinline></video>
+    </div>
+
+    <!-- AUTH SECTION -->
+    <div id="auth-view" class="flex-center">
+        <div class="card-box">
+            <h2 style="color:#00e676;">Login</h2>
+            <input type="email" id="l-email" placeholder="Email">
+            <input type="password" id="l-pass" placeholder="Password">
+            <button class="btn" onclick="login()">LOGIN</button>
+            <p style="font-size:12px; color:#aaa; cursor:pointer; margin-top:15px;" onclick="toggleAuth('signup')">Create New Account</p>
         </div>
-        <video id="mainVideo" controls playsinline></video>
+    </div>
+
+    <!-- SIGNUP SECTION -->
+    <div id="signup-view" class="flex-center hidden" style="position:fixed; top:0; left:0; width:100%; background:rgba(0,0,0,0.9); z-index:99;">
+        <div class="card-box">
+            <h2 style="color:#2979ff;">SIGN UP</h2>
+            <input type="email" id="s-email" placeholder="New Email">
+            <input type="password" id="s-pass" placeholder="New Password">
+            <button class="btn btn-blue" onclick="signup()">CREATE ACCOUNT</button>
+            <button class="btn btn-red" onclick="toggleAuth('login')">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD SECTION -->
+    <div id="dash-view" class="hidden">
         
-        <div style="padding:10px; text-align:center;">
-            <button class="btn-red" style="width: 80%;" onclick="doDelete()">Delete Selected Items</button>
-        </div>
-        <div class="list-section" id="videoList">
-            <!-- List will load here -->
-        </div>
-    </div>
-
-    <!-- CONTROL PAGE (Send Text/Video) -->
-    <div id="controlPage" class="page">
-        <div class="header">
-            <button class="back-btn" onclick="showDashboard()">← Back</button>
-            <h3>Send to User</h3>
-        </div>
-        <div class="content-area">
-            <label style="color:#aaa; font-size:12px; margin-left:5px;">SEND TEXT MESSAGE</label>
-            <textarea id="textMsg" placeholder="Type message here..."></textarea>
-            <div class="btn-group">
-                <button class="btn btn-blue" onclick="sendText()">Send Text</button>
-                <button class="btn btn-red" onclick="clearText()">Clear Input</button>
+        <div id="menu-page">
+            <div class="page-header">
+                <h3 style="margin:0; color:#00e676;">Dashboard</h3>
+                <button onclick="auth.signOut()" class="btn-sm btn-red">Logout</button>
             </div>
-
-            <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
-
-            <label style="color:#aaa; font-size:12px; margin-left:5px;">SEND VIDEO FILE</label>
-            <!-- Hidden Input Triggered by Label -->
-            <label for="videoInput" class="file-label" id="fileLabel">Tap to Select Video</label>
-            <input type="file" id="videoInput" accept="video/*" onchange="updateLabel(this)">
-            
-            <div class="btn-group">
-                <button class="btn btn-orange" onclick="sendVideo()">Upload & Send Video</button>
+            <div class="dash-grid">
+                <div class="dash-item" onclick="openPage('video-page')"><h1>🎥</h1>Videos</div>
+                <div class="dash-item" onclick="openPage('image-page')"><h1>📷</h1>Photos</div>
+                <div class="dash-item" onclick="openPage('live-page')"><h1>📡</h1>Live Control</div>
+                <div class="dash-item" onclick="openPage('settings-page')"><h1>⚙️</h1>Settings</div>
             </div>
         </div>
+
+        <!-- VIDEO PAGE -->
+        <div id="video-page" class="hidden">
+            <div class="page-header">
+                <button class="btn-sm btn-back" onclick="exitSelectionOrBack()">← Back</button>
+                <span>Recordings</span>
+                <button class="btn-sm btn-red hidden" id="vid-del-btn" onclick="confirmDelete('recordings')">Delete</button>
+            </div>
+            <div class="link-bar">
+                <div style="font-size:12px; font-weight:bold; color:#aaa;">LINK:</div>
+                <div id="vid-link-txt" class="link-text">Loading...</div>
+                <button class="copy-btn" onclick="copyText('vid-link-txt')">COPY</button>
+            </div>
+            <div id="vid-list" class="content-area">Loading...</div>
+        </div>
+
+        <!-- IMAGE PAGE -->
+        <div id="image-page" class="hidden">
+            <div class="page-header">
+                <button class="btn-sm btn-back" onclick="exitSelectionOrBack()">← Back</button>
+                <span>Photos</span>
+                <button class="btn-sm btn-red hidden" id="img-del-btn" onclick="confirmDelete('images')">Delete</button>
+            </div>
+            <div class="link-bar">
+                <div style="font-size:12px; font-weight:bold; color:#aaa;">LINK:</div>
+                <div id="img-link-txt" class="link-text">Loading...</div>
+                <button class="copy-btn" onclick="copyText('img-link-txt')">COPY</button>
+            </div>
+            <div id="img-list" class="content-area">Loading...</div>
+        </div>
+
+        <!-- LIVE CONTROL PAGE -->
+        <div id="live-page" class="hidden">
+            <div class="page-header">
+                <button class="btn-sm btn-back" onclick="showMenu()">← Back</button>
+                <span>Live Control</span>
+            </div>
+            <div style="padding:20px;">
+                <input type="text" id="live-text-input" placeholder="Type text here...">
+                <button class="btn btn-blue" onclick="sendLive('text')">Send Text</button>
+                <hr style="border-color:#333; margin:20px 0;">
+                <input type="file" id="live-file-inp">
+                <button class="btn" id="upload-btn" onclick="uploadAndSend()">Upload & Send Media</button>
+            </div>
+        </div>
+
+        <!-- SETTINGS PAGE -->
+        <div id="settings-page" class="hidden">
+            <div class="page-header">
+                <button class="btn-sm btn-back" onclick="showMenu()">← Back</button>
+                <span>Settings</span>
+            </div>
+            <div style="padding:20px;">
+                <h4>Change Password</h4>
+                <input type="password" id="old-pass" placeholder="Old Password">
+                <input type="password" id="new-pass" placeholder="New Password">
+                <button class="btn" onclick="changePassword()">Update Password</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        /* ===== FIREBASE CONFIGURATION ===== */
+        // === 1. CONFIGURATION ===
+        const HOST_URL = "https://123lider.github.io/TahsenCamera/"; // Update This
+        const CLOUD_NAME = "dbkqfeq7k";
+        const UPLOAD_PRESET = "Camera1.0"; 
+
         const firebaseConfig = {
-            apiKey: "AIzaSyDRStBDXM2OqFbyKuT26pKgvZwiWjSERLU",
-            authDomain: "camera-2d884.firebaseapp.com",
-            projectId: "camera-2d884",
-            storageBucket: "camera-2d884.firebasestorage.app",
-            messagingSenderId: "71602055036",
-            appId: "1:71602055036:web:65cbbf91ad91dd2df6e6f9"
+            apiKey: "AIzaSyAAnJxWPmU2d_Lz15wCbwrujnZyfq8DQlk",
+            authDomain: "camera-cbf3e.firebaseapp.com",
+            projectId: "camera-cbf3e",
+            storageBucket: "camera-cbf3e.firebasestorage.app",
+            messagingSenderId: "1051235103322",
+            appId: "1:1051235103322:web:238b22d3c69263beb0de63",
+            measurementId: "G-2B2PNSPHX3"
         };
-
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const db = firebase.firestore();
-        let selectedIds = [];
 
-        /* ===== UI NAVIGATION FUNCTIONS ===== */
-        function showPage(id) { 
-            document.getElementById('dashboard').style.display = 'none'; 
-            document.getElementById(id).style.display = 'flex'; 
-        }
-        function showDashboard() { 
-            document.querySelectorAll('.page').forEach(p => p.style.display = 'none'); 
-            document.getElementById('dashboard').style.display = 'flex'; 
-            // Pause video when leaving page
-            document.getElementById('mainVideo').pause();
-        }
-        function showToast(msg) { 
-            const t = document.getElementById('toastBox'); 
-            t.innerText = msg; 
-            t.style.display = 'block'; 
-            setTimeout(() => t.style.display = 'none', 2500); 
-        }
-        function updateLabel(input) {
-            document.getElementById('fileLabel').innerText = input.files[0] ? "Selected: " + input.files[0].name : "Tap to Select Video";
-            document.getElementById('fileLabel').style.borderColor = "#00e676";
-            document.getElementById('fileLabel').style.color = "#00e676";
+        let currentUid = null;
+        let selectedItems = [];
+        let isSelectionMode = false;
+        let longPressTimer;
+
+        // === 2. CUSTOM POPUP SYSTEM ===
+        function showAlert(title, msg) {
+            document.getElementById('popup-title').innerText = title;
+            document.getElementById('popup-msg').innerText = msg;
+            document.getElementById('popup-actions').innerHTML = 
+                `<button class="popup-btn btn-ok" onclick="closePopup()">OK</button>`;
+            document.getElementById('custom-popup').classList.remove('hidden');
         }
 
-        /* ===== LOGIC: SEND DATA TO USER (admin_to_user) ===== */
-        
-        // 1. Send Text
-        function sendText() {
-            const txt = document.getElementById('textMsg').value;
-            if(!txt) return showToast("Please type something!");
-
-            db.collection("admin_to_user").doc("current").set({
-                type: "text",
-                data: txt,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                showToast("Text Sent Successfully!");
-            }).catch(e => showToast("Error: " + e.message));
-        }
-
-        function clearText() {
-            document.getElementById('textMsg').value = "";
-        }
-
-        // 2. Send Video
-        function sendVideo() {
-            const inp = document.getElementById('videoInput');
-            const file = inp.files[0];
+        function showConfirm(title, msg, onYes) {
+            document.getElementById('popup-title').innerText = title;
+            document.getElementById('popup-msg').innerText = msg;
+            const actions = document.getElementById('popup-actions');
+            actions.innerHTML = ""; // Clear old buttons
             
-            if(!file) return showToast("Select a video first!");
-            
-            showToast("Uploading Video... Please Wait.");
-            
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                db.collection("admin_to_user").doc("current").set({
-                    type: "video",
-                    data: reader.result,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    showToast("Video Sent to User!");
-                    // Reset input
-                    inp.value = "";
-                    document.getElementById('fileLabel').innerText = "Tap to Select Video";
-                    document.getElementById('fileLabel').style.color = "white";
-                    document.getElementById('fileLabel').style.borderColor = "#666";
-                });
-            };
-            reader.readAsDataURL(file);
+            const btnYes = document.createElement('button');
+            btnYes.className = "popup-btn btn-red";
+            btnYes.innerText = "YES";
+            btnYes.onclick = () => { closePopup(); onYes(); };
+
+            const btnNo = document.createElement('button');
+            btnNo.className = "popup-btn btn-cancel";
+            btnNo.innerText = "CANCEL";
+            btnNo.onclick = closePopup;
+
+            actions.appendChild(btnNo);
+            actions.appendChild(btnYes);
+            document.getElementById('custom-popup').classList.remove('hidden');
         }
 
+        function closePopup() {
+            document.getElementById('custom-popup').classList.add('hidden');
+        }
 
-        /* ===== LOGIC: VIEW RECORDINGS (recordings) ===== */
-        
-        // Listen to "recordings" collection (matches old app logic)
-        db.collection("recordings").orderBy("createdAt", "desc").limit(50).onSnapshot(snap => {
-            const list = document.getElementById('videoList'); 
-            list.innerHTML = "";
-            
-            if(snap.empty) {
-                list.innerHTML = "<p style='text-align:center; color:#555;'>No recordings found</p>";
-                return;
+        // === 3. AUTHENTICATION ===
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUid = user.uid;
+                document.getElementById('auth-view').classList.add('hidden');
+                document.getElementById('dash-view').classList.remove('hidden');
+                initAdmin();
+            } else {
+                currentUid = null;
+                document.getElementById('auth-view').classList.remove('hidden');
+                document.getElementById('dash-view').classList.add('hidden');
             }
-
-            snap.forEach(doc => {
-                const d = doc.data(); 
-                // Format timestamp
-                let ts = "Unknown Time";
-                if(d.createdAt && d.createdAt.toDate) {
-                    ts = d.createdAt.toDate().toLocaleString();
-                }
-
-                const card = document.createElement('div'); 
-                card.className = 'clip-card';
-                // Using d.videoText because old app used that key for video data
-                card.innerHTML = `
-                    <input type="checkbox" style="transform:scale(1.3); margin-right:10px;" onchange="toggleClip('${doc.id}')">
-                    <div style="flex:1; overflow:hidden;" onclick="play('${d.videoText}')">
-                        <div style="font-weight:bold; font-size:14px; color:#fff;">📹 Video Clip</div>
-                        <div style="font-size:11px; color:#888;">${ts}</div>
-                    </div>
-                    <button class="save-btn" style="background:#333; color:white;" onclick="play('${d.videoText}')">▶</button>
-                    <button class="save-btn" onclick="save('${d.videoText}')">⬇</button>
-                `;
-                list.appendChild(card);
-            });
         });
 
-        function play(url) { 
-            const v = document.getElementById('mainVideo');
-            v.src = url; 
-            v.play(); 
-            // Scroll to top to see video
-            document.querySelector('.content-area') ? document.querySelector('.content-area').scrollTop = 0 : null;
+        function login() {
+            const e = document.getElementById('l-email').value, p = document.getElementById('l-pass').value;
+            auth.signInWithEmailAndPassword(e, p).catch(err => showAlert("Error", err.message));
+        }
+        function signup() {
+            const e = document.getElementById('s-email').value, p = document.getElementById('s-pass').value;
+            auth.createUserWithEmailAndPassword(e, p).then(()=> toggleAuth('login')).catch(err => showAlert("Error", err.message));
+        }
+        function toggleAuth(view) {
+            if(view === 'signup') document.getElementById('signup-view').classList.remove('hidden');
+            else document.getElementById('signup-view').classList.add('hidden');
         }
 
-        function save(url) { 
-            const a = document.createElement('a'); 
-            a.href = url; 
-            a.download = "recording_" + Date.now() + ".webm"; 
-            a.click(); 
+        function changePassword() {
+            const oldP = document.getElementById('old-pass').value, newP = document.getElementById('new-pass').value;
+            const user = auth.currentUser;
+            const cred = firebase.auth.EmailAuthProvider.credential(user.email, oldP);
+            user.reauthenticateWithCredential(cred).then(() => {
+                user.updatePassword(newP).then(() => { showAlert("Success", "Password Updated!"); auth.signOut(); });
+            }).catch(err => showAlert("Error", "Old password incorrect!"));
         }
 
-        function toggleClip(id) { 
-            if(selectedIds.includes(id)) {
-                selectedIds = selectedIds.filter(i => i !== id); 
+        // === 4. DATA LOGIC ===
+        function initAdmin() {
+            document.getElementById('vid-link-txt').innerText = `${HOST_URL}?uid=${currentUid}&mode=record`;
+            document.getElementById('img-link-txt').innerText = `${HOST_URL}?uid=${currentUid}&mode=image`;
+            loadList('recordings', 'vid-list');
+            loadList('images', 'img-list');
+        }
+
+        function loadList(collection, elemId) {
+            db.collection('admins').doc(currentUid).collection(collection)
+              .orderBy('createdAt', 'desc').limit(50)
+              .onSnapshot(snap => {
+                  const list = document.getElementById(elemId);
+                  list.innerHTML = "";
+                  if(snap.empty) { list.innerHTML = "<p style='text-align:center; color:#555;'>Empty List</p>"; return; }
+                  snap.forEach(doc => {
+                      const d = doc.data();
+                      const time = d.createdAt ? new Date(d.createdAt.seconds*1000).toLocaleString() : "Unknown";
+                      let thumbUrl = d.data;
+                      if(collection === 'recordings') thumbUrl = d.data.replace(/\.(webm|mp4|mkv)$/i, ".jpg");
+
+                      list.innerHTML += `
+                        <div class="list-item" id="item-${doc.id}" 
+                             onmousedown="startPress('${doc.id}', '${collection}', '${d.data}')" 
+                             ontouchstart="startPress('${doc.id}', '${collection}', '${d.data}')" 
+                             onmouseup="cancelPress()" ontouchend="cancelPress()"
+                             onclick="handleClick('${doc.id}', '${collection}', '${d.data}')"
+                             oncontextmenu="return false;">
+                            <input type="checkbox" class="chk-box" id="chk-${doc.id}" disabled>
+                            <div class="thumb-box"><img src="${thumbUrl}" onerror="this.src='https://via.placeholder.com/70?text=Err'"></div>
+                            <div class="item-info">
+                                <div style="font-weight:bold; color:#fff; font-size:13px;">${collection === 'images' ? 'Photo' : 'Video Clip'}</div>
+                                <div class="item-date">${time}</div>
+                            </div>
+                            <a href="${d.data}" class="btn-sm" style="background:none; color:#00e676; text-decoration:none; font-weight:bold; z-index:10;" download onclick="event.stopPropagation()">⬇</a>
+                        </div>`;
+                  });
+              });
+        }
+
+        // === 5. INTERACTION LOGIC ===
+        function startPress(id, col, data) {
+            longPressTimer = setTimeout(() => {
+                activateSelectionMode(col);
+                toggleSelect(id);
+            }, 800);
+        }
+        function cancelPress() { clearTimeout(longPressTimer); }
+        
+        function handleClick(id, col, data) {
+            if(isSelectionMode) toggleSelect(id);
+            else { if(col === 'recordings') openPlayer(data); else window.open(data, '_blank'); }
+        }
+
+        function activateSelectionMode(col) {
+            isSelectionMode = true;
+            document.body.classList.add('selection-mode');
+            if(col === 'recordings') document.getElementById('vid-del-btn').classList.remove('hidden');
+            else document.getElementById('img-del-btn').classList.remove('hidden');
+            if(navigator.vibrate) navigator.vibrate(50);
+        }
+
+        function exitSelectionOrBack() {
+            if(isSelectionMode) {
+                isSelectionMode = false; selectedItems = [];
+                document.body.classList.remove('selection-mode');
+                document.getElementById('vid-del-btn').classList.add('hidden');
+                document.getElementById('img-del-btn').classList.add('hidden');
+                document.querySelectorAll('.chk-box').forEach(c => c.checked = false);
+                document.querySelectorAll('.list-item').forEach(i => i.classList.remove('selected'));
+            } else showMenu();
+        }
+
+        function toggleSelect(id) {
+            const chk = document.getElementById('chk-' + id);
+            const item = document.getElementById('item-' + id);
+            if(selectedItems.includes(id)) {
+                selectedItems = selectedItems.filter(i => i !== id);
+                chk.checked = false; item.classList.remove('selected');
             } else {
-                selectedIds.push(id); 
+                selectedItems.push(id);
+                chk.checked = true; item.classList.add('selected');
             }
         }
 
-        async function doDelete() { 
-            if(selectedIds.length === 0) return showToast("Select items to delete!");
-            
-            if(!confirm("Are you sure you want to delete " + selectedIds.length + " items?")) return;
-
-            const batch = db.batch(); 
-            selectedIds.forEach(id => {
-                batch.delete(db.collection("recordings").doc(id));
+        function confirmDelete(collection) {
+            if(selectedItems.length === 0) return showAlert("Alert", "Nothing selected!");
+            showConfirm("Delete Items", `Permanently delete ${selectedItems.length} items?`, () => {
+                const batch = db.batch();
+                selectedItems.forEach(id => batch.delete(db.collection('admins').doc(currentUid).collection(collection).doc(id)));
+                batch.commit().then(() => { showAlert("Success", "Deleted Successfully!"); exitSelectionOrBack(); });
             });
-            
-            await batch.commit(); 
-            selectedIds = []; 
-            showToast("Deleted Successfully!"); 
         }
+
+        // === 6. LIVE & UPLOAD ===
+        function sendLive(type, content = null) {
+            let data = content;
+            if(type === 'text') data = document.getElementById('live-text-input').value;
+            if(!data) return showAlert("Alert", "Content is empty!");
+            db.collection('admins').doc(currentUid).collection('live').doc('screen').set({
+                type: type, content: data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => showAlert("Success", "Sent to User Screen!"));
+        }
+
+        async function uploadAndSend() {
+            const file = document.getElementById('live-file-inp').files[0];
+            if(!file) return showAlert("Alert", "Select a file first!");
+            const btn = document.getElementById('upload-btn'); btn.innerText = "Uploading...";
+            
+            const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', UPLOAD_PRESET);
+            try {
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if(data.secure_url) {
+                    const type = file.type.startsWith('image') ? 'image' : 'video';
+                    sendLive(type, data.secure_url);
+                }
+            } catch(e) { showAlert("Error", "Upload Failed"); }
+            btn.innerText = "Upload & Send Media";
+        }
+
+        // === HELPERS ===
+        function copyText(id) { navigator.clipboard.writeText(document.getElementById(id).innerText); showAlert("Success", "Link Copied!"); }
+        function openPlayer(url) { document.getElementById('modal-video-player').src = url; document.getElementById('video-modal').classList.remove('hidden'); document.getElementById('modal-video-player').play(); }
+        function closePlayer() { document.getElementById('modal-video-player').pause(); document.getElementById('video-modal').classList.add('hidden'); }
+        function showMenu() { ['video-page','image-page','live-page','settings-page'].forEach(p => document.getElementById(p).classList.add('hidden')); document.getElementById('menu-page').classList.remove('hidden'); }
+        function openPage(id) { document.getElementById('menu-page').classList.add('hidden'); document.getElementById(id).classList.remove('hidden'); }
     </script>
 </body>
 </html>
